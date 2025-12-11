@@ -287,6 +287,21 @@
             word-break: break-word;
         }
 
+        .size-comparison {
+            background: var(--light-cream);
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--medium-text);
+        }
+
+        .size-comparison.reduced {
+            background: var(--success-bg);
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
         .metadata-section {
             margin: 30px 0;
             padding: 30px;
@@ -665,7 +680,6 @@
             transition: width 0.3s ease;
         }
 
-        /* 验证码模态框样式 */
         .captcha-modal {
             display: none;
             position: fixed;
@@ -914,13 +928,12 @@
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
-                <div class="feature-title">快速处理</div>
-                <div class="feature-desc">采用Canvas技术快速处理，保持高质量输出</div>
+                <div class="feature-title">智能压缩</div>
+                <div class="feature-desc">保持原格式，优化文件大小，删除元数据后体积更小</div>
             </div>
         </div>
     </div>
 
-    <!-- 验证码模态框 -->
     <div class="captcha-modal" id="captchaModal">
         <div class="captcha-content">
             <div class="captcha-header">
@@ -953,7 +966,8 @@
             processedBlob: null,
             hasMetadata: false,
             captchaId: null,
-            captchaVerified: false
+            captchaVerified: false,
+            originalSize: 0
         };
 
         const elements = {
@@ -1117,6 +1131,7 @@
             state.currentFile = file;
             state.processedBlob = null;
             state.captchaVerified = false;
+            state.originalSize = file.size;
             elements.downloadBtn.disabled = true;
 
             elements.fileInfo.classList.add('active');
@@ -1147,9 +1162,20 @@
             hideStatus();
         }
 
-        function displayFileDetails(file) {
+        function displayFileDetails(file, processedSize = null) {
             const size = formatFileSize(file.size);
             const lastModified = formatDate(file.lastModified);
+
+            let sizeComparisonHtml = '';
+            if (processedSize !== null) {
+                const reduction = ((file.size - processedSize) / file.size * 100).toFixed(1);
+                const processedSizeStr = formatFileSize(processedSize);
+                sizeComparisonHtml = `
+                    <div class="size-comparison reduced">
+                        ✅ 处理后: ${processedSizeStr} (减少 ${reduction}%)
+                    </div>
+                `;
+            }
 
             elements.fileDetails.innerHTML = `
                 <div class="detail-item">
@@ -1159,6 +1185,7 @@
                 <div class="detail-item">
                     <div class="detail-label">💾 文件大小</div>
                     <div class="detail-value">${size}</div>
+                    ${sizeComparisonHtml}
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">📋 文件类型</div>
@@ -1280,10 +1307,42 @@
                         canvas.width = img.width;
                         canvas.height = img.height;
 
-                        updateProgress(60);
+                        updateProgress(50);
 
-                        const ctx = canvas.getContext('2d');
+                        const ctx = canvas.getContext('2d', { 
+                            alpha: file.type === 'image/png',
+                            willReadFrequently: false
+                        });
+
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, 0, 0);
+
+                        updateProgress(70);
+
+                        let outputType = file.type;
+                        let quality = 0.92;
+
+                        if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+                            outputType = 'image/jpeg';
+                            quality = 0.92;
+                        } 
+                        else if (file.type === 'image/png') {
+                            outputType = 'image/png';
+                            quality = 1.0;
+                        }
+                        else if (file.type === 'image/webp') {
+                            outputType = 'image/webp';
+                            quality = 0.92;
+                        }
+                        else if (file.type === 'image/gif') {
+                            outputType = 'image/png';
+                            quality = 1.0;
+                        }
+                        else {
+                            outputType = 'image/jpeg';
+                            quality = 0.92;
+                        }
 
                         updateProgress(80);
 
@@ -1291,6 +1350,9 @@
                             if (blob) {
                                 state.processedBlob = blob;
                                 updateProgress(100);
+
+                                console.log(`原始: ${formatFileSize(file.size)}, 处理后: ${formatFileSize(blob.size)}`);
+
                                 setTimeout(function() {
                                     hideProgress();
                                     resolve();
@@ -1298,7 +1360,7 @@
                             } else {
                                 reject(new Error('无法生成处理后的图片'));
                             }
-                        }, 'image/png', 0.95);
+                        }, outputType, quality);
                     } catch (error) {
                         reject(error);
                     }
@@ -1349,7 +1411,10 @@
                     await processVideo(state.currentFile);
                 }
 
-                showStatus('success', '✅ 元数据已清除，可下载文件');
+                displayFileDetails(state.currentFile, state.processedBlob.size);
+
+                const sizeReduction = ((state.originalSize - state.processedBlob.size) / state.originalSize * 100).toFixed(1);
+                showStatus('success', `✅ 元数据已清除，文件大小减少 ${sizeReduction}%`);
                 elements.downloadBtn.disabled = false;
 
                 elements.metadataContainer.innerHTML = `
@@ -1376,8 +1441,17 @@
             a.href = url;
 
             const originalName = state.currentFile.name;
-            const extension = originalName.substring(originalName.lastIndexOf('.'));
+            let extension = originalName.substring(originalName.lastIndexOf('.'));
             const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
+
+            if (state.processedBlob.type === 'image/jpeg') {
+                extension = '.jpg';
+            } else if (state.processedBlob.type === 'image/png') {
+                extension = '.png';
+            } else if (state.processedBlob.type === 'image/webp') {
+                extension = '.webp';
+            }
+
             a.download = `${nameWithoutExt}_cleaned${extension}`;
 
             document.body.appendChild(a);
@@ -1392,6 +1466,7 @@
             state.currentFile = null;
             state.processedBlob = null;
             state.captchaVerified = false;
+            state.originalSize = 0;
             elements.fileInput.value = '';
             elements.fileInfo.classList.remove('active');
             elements.downloadBtn.disabled = true;
