@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>隐私卫士 - 元数据清除工具</title>
+    <title>图片视频元数据清除工具</title>
     <style>
         :root {
             --primary-green: #2d5016;
@@ -121,14 +121,14 @@
 
         .header h1 {
             color: var(--primary-green);
-            font-size: 2.8em;
+            font-size: 2.5em;
             margin-bottom: 12px;
             font-weight: 800;
         }
 
         .header p {
             color: var(--medium-text);
-            font-size: 1.15em;
+            font-size: 1.05em;
             font-weight: 500;
         }
 
@@ -295,6 +295,7 @@
             border-left: 5px solid var(--danger-color);
             animation: fadeInUp 0.5s ease-out;
             box-shadow: var(--shadow-sm);
+            position: relative;
         }
 
         .metadata-header {
@@ -321,10 +322,39 @@
             box-shadow: 0 2px 8px rgba(217, 83, 79, 0.3);
         }
 
+        .metadata-toggle {
+            margin-left: auto;
+            background: transparent;
+            border: 2px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .metadata-toggle:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
         .metadata-list {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
+            max-height: 400px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .metadata-list.collapsed {
+            max-height: 200px;
+        }
+
+        .metadata-list.expanded {
+            max-height: none;
         }
 
         .metadata-item {
@@ -357,6 +387,12 @@
             max-width: 60%;
             word-break: break-word;
             font-size: 0.95em;
+            max-height: 3em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .no-metadata {
@@ -629,6 +665,168 @@
             transition: width 0.3s ease;
         }
 
+        /* 验证码模态框样式 */
+        .captcha-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .captcha-modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .captcha-content {
+            background: var(--cream-white);
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 350px;
+            width: 90%;
+            animation: scaleIn 0.3s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .captcha-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .captcha-title {
+            color: var(--primary-green);
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .captcha-subtitle {
+            color: var(--medium-text);
+            font-size: 0.9em;
+        }
+
+        .captcha-image-wrapper {
+            text-align: center;
+            margin: 20px 0;
+            background: var(--soft-cream);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border: 2px solid rgba(127, 176, 105, 0.2);
+        }
+
+        .captcha-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .captcha-image:hover {
+            transform: scale(1.05);
+        }
+
+        .captcha-refresh {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--light-green);
+            font-size: 0.85em;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .captcha-refresh:hover {
+            color: var(--secondary-green);
+        }
+
+        .captcha-input-group {
+            margin: 20px 0;
+        }
+
+        .captcha-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--accent-green);
+            border-radius: var(--radius-sm);
+            font-size: 1em;
+            transition: var(--transition);
+            background: var(--soft-cream);
+        }
+
+        .captcha-input:focus {
+            outline: none;
+            border-color: var(--secondary-green);
+            box-shadow: 0 0 0 3px rgba(61, 107, 37, 0.1);
+        }
+
+        .captcha-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .captcha-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .captcha-btn-primary {
+            background: linear-gradient(135deg, var(--secondary-green), var(--light-green));
+            color: white;
+        }
+
+        .captcha-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .captcha-btn-secondary {
+            background: var(--light-cream);
+            color: var(--dark-text);
+            border: 2px solid var(--accent-green);
+        }
+
+        .captcha-btn-secondary:hover {
+            background: var(--soft-cream);
+        }
+
+        .captcha-error {
+            color: var(--danger-color);
+            font-size: 0.85em;
+            margin-top: 10px;
+            display: none;
+            text-align: center;
+        }
+
+        .captcha-error.active {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 30px 20px;
@@ -648,6 +846,10 @@
             .features {
                 grid-template-columns: 1fr;
             }
+
+            .captcha-content {
+                max-width: 90%;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -664,9 +866,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="header-icon">🛡️</div>
-            <h1>隐私卫士</h1>
-            <p>安全清除图片视频中的敏感元数据信息</p>
+            <div class="header-icon">🗑️</div>
+            <h1>元数据清除工具</h1>
+            <p>删除图片和视频中的EXIF、GPS定位等元数据信息</p>
         </div>
 
         <div class="upload-area" id="uploadArea">
@@ -702,18 +904,42 @@
         <div class="features">
             <div class="feature-item">
                 <div class="feature-icon">🔐</div>
-                <div class="feature-title">完全本地处理</div>
-                <div class="feature-desc">所有操作在浏览器中完成，文件不会上传到任何服务器</div>
+                <div class="feature-title">本地处理</div>
+                <div class="feature-desc">所有操作在浏览器中完成，文件不会上传到服务器</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">🔍</div>
-                <div class="feature-title">智能元数据检测</div>
-                <div class="feature-desc">自动识别EXIF、GPS定位、设备信息等敏感元数据</div>
+                <div class="feature-title">元数据检测</div>
+                <div class="feature-desc">自动识别EXIF、GPS定位、设备信息等元数据</div>
             </div>
             <div class="feature-item">
                 <div class="feature-icon">⚡</div>
-                <div class="feature-title">极速处理引擎</div>
+                <div class="feature-title">快速处理</div>
                 <div class="feature-desc">采用Canvas技术快速处理，保持高质量输出</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 验证码模态框 -->
+    <div class="captcha-modal" id="captchaModal">
+        <div class="captcha-content">
+            <div class="captcha-header">
+                <div class="captcha-title">验证码</div>
+                <div class="captcha-subtitle">请输入图片中算式的结果</div>
+            </div>
+            <div class="captcha-image-wrapper">
+                <img class="captcha-image" id="captchaImage" alt="验证码">
+                <div>
+                    <span class="captcha-refresh" id="captchaRefresh">🔄 刷新验证码</span>
+                </div>
+            </div>
+            <div class="captcha-input-group">
+                <input type="text" class="captcha-input" id="captchaInput" placeholder="请输入计算结果（数字）" maxlength="10">
+                <div class="captcha-error" id="captchaError">验证码错误，请重试</div>
+            </div>
+            <div class="captcha-buttons">
+                <button class="captcha-btn captcha-btn-primary" id="captchaSubmit">确认</button>
+                <button class="captcha-btn captcha-btn-secondary" id="captchaCancel">取消</button>
             </div>
         </div>
     </div>
@@ -722,14 +948,14 @@
     <script>
         'use strict';
 
-        // 应用状态
         const state = {
             currentFile: null,
             processedBlob: null,
-            hasMetadata: false
+            hasMetadata: false,
+            captchaId: null,
+            captchaVerified: false
         };
 
-        // DOM元素
         const elements = {
             uploadArea: document.getElementById('uploadArea'),
             fileInput: document.getElementById('fileInput'),
@@ -743,10 +969,16 @@
             status: document.getElementById('status'),
             loader: document.getElementById('loader'),
             progressBar: document.getElementById('progressBar'),
-            progressFill: document.getElementById('progressFill')
+            progressFill: document.getElementById('progressFill'),
+            captchaModal: document.getElementById('captchaModal'),
+            captchaImage: document.getElementById('captchaImage'),
+            captchaInput: document.getElementById('captchaInput'),
+            captchaError: document.getElementById('captchaError'),
+            captchaSubmit: document.getElementById('captchaSubmit'),
+            captchaCancel: document.getElementById('captchaCancel'),
+            captchaRefresh: document.getElementById('captchaRefresh')
         };
 
-        // 元数据字段映射
         const metadataFields = {
             'Make': '设备制造商',
             'Model': '设备型号',
@@ -778,7 +1010,6 @@
             '时长': '视频时长'
         };
 
-        // 工具函数
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -810,7 +1041,6 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // UI控制
         function showStatus(type, message) {
             elements.status.className = `status ${type}`;
             elements.status.textContent = message;
@@ -839,12 +1069,54 @@
             elements.progressFill.style.width = '0%';
         }
 
-        // 处理文件
+        async function loadCaptcha() {
+            try {
+                const response = await fetch('https://v2.xxapi.cn/api/chineseCaptcha');
+                const data = await response.json();
+
+                if (data.code === 200 && data.data) {
+                    state.captchaId = data.data.id;
+                    elements.captchaImage.src = data.data.url;
+                    elements.captchaError.classList.remove('active');
+                } else {
+                    throw new Error('验证码加载失败');
+                }
+            } catch (error) {
+                console.error('验证码加载错误:', error);
+                elements.captchaError.textContent = '验证码加载失败，请重试';
+                elements.captchaError.classList.add('active');
+            }
+        }
+
+        async function verifyCaptcha(answer) {
+            try {
+                const response = await fetch(`https://v2.xxapi.cn/api/chineseCaptcha?type=verify&id=${state.captchaId}&answer=${answer}`);
+                const data = await response.json();
+
+                return data.code === 200;
+            } catch (error) {
+                console.error('验证码验证错误:', error);
+                return false;
+            }
+        }
+
+        function showCaptchaModal() {
+            elements.captchaModal.classList.add('active');
+            elements.captchaInput.value = '';
+            elements.captchaError.classList.remove('active');
+            loadCaptcha();
+        }
+
+        function hideCaptchaModal() {
+            elements.captchaModal.classList.remove('active');
+        }
+
         function handleFile(file) {
             if (!file) return;
 
             state.currentFile = file;
             state.processedBlob = null;
+            state.captchaVerified = false;
             elements.downloadBtn.disabled = true;
 
             elements.fileInfo.classList.add('active');
@@ -875,7 +1147,6 @@
             hideStatus();
         }
 
-        // 显示文件详情
         function displayFileDetails(file) {
             const size = formatFileSize(file.size);
             const lastModified = formatDate(file.lastModified);
@@ -900,7 +1171,6 @@
             `;
         }
 
-        // 提取图片元数据
         function extractImageMetadata(img) {
             EXIF.getData(img, function() {
                 const allMetaData = EXIF.getAllTags(this);
@@ -908,7 +1178,6 @@
             });
         }
 
-        // 提取视频元数据
         function extractVideoMetadata(video) {
             const metadata = {
                 '视频宽度': video.videoWidth + 'px',
@@ -918,7 +1187,6 @@
             displayMetadata(metadata);
         }
 
-        // 显示元数据
         function displayMetadata(metadata) {
             const keys = Object.keys(metadata).filter(k => metadata[k] !== undefined && metadata[k] !== '');
 
@@ -926,7 +1194,7 @@
                 elements.metadataContainer.innerHTML = `
                     <div class="metadata-section" style="background: var(--success-bg); border-color: var(--success-color);">
                         <div class="no-metadata">
-                            ✅ 未检测到敏感元数据信息
+                            ✅ 未检测到元数据信息
                         </div>
                     </div>
                 `;
@@ -937,6 +1205,7 @@
             state.hasMetadata = true;
             const metadataCount = keys.length;
             const hasGPS = metadata.GPSLatitude || metadata.GPSLongitude;
+            const shouldCollapse = metadataCount > 6;
 
             let warningHtml = '';
             if (hasGPS || metadataCount > 0) {
@@ -944,7 +1213,7 @@
                     <div class="warning-box">
                         <div class="warning-icon">⚠️</div>
                         <div class="warning-text">
-                            <strong>隐私警告：</strong>此文件包含 <strong>${metadataCount}</strong> 项元数据${hasGPS ? '，<strong>包括GPS定位信息！</strong>' : '。'}建议立即清除。
+                            <strong>警告：</strong>此文件包含 <strong>${metadataCount}</strong> 项元数据${hasGPS ? '，<strong>包括GPS定位信息！</strong>' : '。'}
                         </div>
                     </div>
                 `;
@@ -964,26 +1233,42 @@
                 metadataHtml += `
                     <div class="metadata-item">
                         <span class="metadata-key">${displayName}</span>
-                        <span class="metadata-value">${value}</span>
+                        <span class="metadata-value" title="${value}">${value}</span>
                     </div>
                 `;
             }
+
+            const toggleButton = shouldCollapse ? 
+                `<button class="metadata-toggle" onclick="toggleMetadata(this)">展开全部</button>` : '';
 
             elements.metadataContainer.innerHTML = `
                 ${warningHtml}
                 <div class="metadata-section">
                     <div class="metadata-header">
-                        <span class="metadata-title">🔍 检测到的元数据</span>
+                        <span class="metadata-title">检测到的元数据</span>
                         <span class="metadata-badge">${metadataCount} 项</span>
+                        ${toggleButton}
                     </div>
-                    <div class="metadata-list">
+                    <div class="metadata-list ${shouldCollapse ? 'collapsed' : ''}">
                         ${metadataHtml}
                     </div>
                 </div>
             `;
         }
 
-        // 处理图片
+        window.toggleMetadata = function(button) {
+            const list = button.closest('.metadata-section').querySelector('.metadata-list');
+            if (list.classList.contains('collapsed')) {
+                list.classList.remove('collapsed');
+                list.classList.add('expanded');
+                button.textContent = '收起';
+            } else {
+                list.classList.remove('expanded');
+                list.classList.add('collapsed');
+                button.textContent = '展开全部';
+            }
+        };
+
         async function processImage(file) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -1025,7 +1310,6 @@
             });
         }
 
-        // 处理视频
         async function processVideo(file) {
             return new Promise((resolve, reject) => {
                 updateProgress(30);
@@ -1046,11 +1330,13 @@
             });
         }
 
-        // 处理按钮点击
         async function processFile() {
             if (!state.currentFile) return;
+            showCaptchaModal();
+        }
 
-            showStatus('processing', '⏳ 正在清除元数据，请稍候...');
+        async function doProcessFile() {
+            showStatus('processing', '⏳ 正在清除元数据...');
             showLoader();
             elements.processBtn.disabled = true;
 
@@ -1063,13 +1349,13 @@
                     await processVideo(state.currentFile);
                 }
 
-                showStatus('success', '✅ 元数据已成功清除！文件已准备好下载。');
+                showStatus('success', '✅ 元数据已清除，可下载文件');
                 elements.downloadBtn.disabled = false;
 
                 elements.metadataContainer.innerHTML = `
                     <div class="metadata-section" style="background: var(--success-bg); border-color: var(--success-color);">
                         <div class="no-metadata">
-                            ✅ 元数据已全部清除，文件可安全分享
+                            ✅ 元数据已全部清除
                         </div>
                     </div>
                 `;
@@ -1082,7 +1368,6 @@
             }
         }
 
-        // 下载文件
         function downloadFile() {
             if (!state.processedBlob) return;
 
@@ -1100,13 +1385,13 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            showStatus('success', '📥 文件已开始下载！');
+            showStatus('success', '📥 文件已下载');
         }
 
-        // 重置
         function reset() {
             state.currentFile = null;
             state.processedBlob = null;
+            state.captchaVerified = false;
             elements.fileInput.value = '';
             elements.fileInfo.classList.remove('active');
             elements.downloadBtn.disabled = true;
@@ -1115,22 +1400,18 @@
             hideProgress();
         }
 
-        // 初始化事件监听
         function init() {
-            // 上传区域点击
             elements.uploadArea.addEventListener('click', function(e) {
                 e.stopPropagation();
                 elements.fileInput.click();
             });
 
-            // 文件选择
             elements.fileInput.addEventListener('change', function(e) {
                 if (e.target.files && e.target.files.length > 0) {
                     handleFile(e.target.files[0]);
                 }
             });
 
-            // 拖放事件
             elements.uploadArea.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1152,15 +1433,53 @@
                 }
             });
 
-            // 按钮事件
             elements.processBtn.addEventListener('click', processFile);
             elements.downloadBtn.addEventListener('click', downloadFile);
             elements.resetBtn.addEventListener('click', reset);
 
-            console.log('🛡️ 隐私卫士已加载完成');
+            elements.captchaSubmit.addEventListener('click', async function() {
+                const answer = elements.captchaInput.value.trim();
+                if (!answer) {
+                    elements.captchaError.textContent = '请输入验证码';
+                    elements.captchaError.classList.add('active');
+                    return;
+                }
+
+                const isValid = await verifyCaptcha(answer);
+                if (isValid) {
+                    state.captchaVerified = true;
+                    hideCaptchaModal();
+                    doProcessFile();
+                } else {
+                    elements.captchaError.textContent = '验证码错误，请重试';
+                    elements.captchaError.classList.add('active');
+                    loadCaptcha();
+                }
+            });
+
+            elements.captchaCancel.addEventListener('click', function() {
+                hideCaptchaModal();
+            });
+
+            elements.captchaRefresh.addEventListener('click', function() {
+                loadCaptcha();
+            });
+
+            elements.captchaInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    elements.captchaSubmit.click();
+                }
+            });
+
+            elements.captchaModal.addEventListener('click', function(e) {
+                if (e.target === elements.captchaModal) {
+                    hideCaptchaModal();
+                }
+            });
+
+            console.log('元数据清除工具已加载');
         }
 
-        // 页面加载完成后初始化
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
